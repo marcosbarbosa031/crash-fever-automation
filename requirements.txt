@@ -1,0 +1,3 @@
+mss
+PyAutoGUI
+opencv-python
