@@ -1,10 +1,11 @@
+import os
 import mss
 import cv2
 import keyboard
 import pyautogui
 import numpy as np
 from enum import Enum
-from time import time
+from time import time, sleep
 
 sct = mss.mss()
 
@@ -14,6 +15,9 @@ pyautogui.PAUSE = 0
 # Threshold
 BLUESTACKS_THRESHOLD = .90
 AUTO_THRESHOLD = .80
+OK_THRESHOLD = .80
+CONTINUE_THRESHOLD = .80
+RETRY_THRESHOLD = .80
 
 # Box Drawing
 BOX_COLOR = (0, 255, 0)
@@ -21,15 +25,13 @@ BOX_BORDER_WIDTH = 2
 
 # Game state
 class GAME_STATES(Enum):
-    GAME_NOT_STARTED = 0
     GAME_AUTO_OFF = 1
-    GAME_AUTO_ON = 2
-    GAME_END_MESSAGE = 3
-    GAME_END_BONUS = 4
-    GAME_QUEST_CLEAR_POPUP = 5
-    GAME_QUEST_CLEAR = 6
+    GAME_END_MESSAGE = 2
+    GAME_END_BONUS = 3
+    GAME_QUEST_CLEAR = 4
 
-game_state = GAME_STATES.GAME_NOT_STARTED
+game_state = GAME_STATES.GAME_AUTO_OFF
+fps_time = time()
 
 # Drawing
 RECT_COLOR = (0, 255, 0)
@@ -39,8 +41,8 @@ RECT_BORDER_WIDTH = 2
 auto_btn_img = cv2.imread('assets/auto_btn.png')
 ok_btn_img = cv2.imread('assets/ok_btn.png')
 continue_btn_img = cv2.imread('assets/continue_btn.png')
-ok_btn_img = cv2.imread('assets/ok_btn.png')
 retry_btn_img = cv2.imread('assets/retry_btn.png')
+
 
 # Get monitor screen
 def get_monitor_scr():
@@ -127,27 +129,13 @@ def draw_rect(image, start_vertex, end_vertex, rect_color, rect_border_width):
     """
     cv2.rectangle(image, start_vertex, end_vertex, rect_color, rect_border_width)
 
-# Print FPS
-def show_fps(fps_time):
-    """Show FPS on console
-
-    @param fps_time Time use to calc FPS.
-
-    @returns Updated time.
-    """
-    try:
-        print('FPS: %.0f' % (1 / (time() - fps_time)))
-    except:
-        None
-    return time()
-
 # Go to next game state
 def next_state():
     """Update game state to next state
-
-    @returns Updated game state.
     """
-    return GAME_STATES(game_state.value + 1)
+    global game_state
+    next = game_state.value + 1 if game_state.value < len(GAME_STATES) else 1
+    game_state = GAME_STATES(next)
 
 # Click the image found on scree
 def click_img_on_screen(img, img_loc):
@@ -159,33 +147,71 @@ def click_img_on_screen(img, img_loc):
     w, h = get_img_dimension(img)
     draw_rect(monitor_img, img_loc, (img_loc[0] + w, img_loc[1] + h), RECT_COLOR, RECT_BORDER_WIDTH)
 
-    click_x = max_loc[0] + (w/2)
-    click_y = max_loc[1] + (h/2)
+    click_x = img_loc[0] + (w/2)
+    click_y = img_loc[1] + (h/2)
 
     pyautogui.click(click_x, click_y)
 
+# Find image on the specific game state
+def find_and_click_img(img, threshold):
+    """Find image on the specific game state.
+
+    @param img The image to click.
+    @param threshold image threshold.
+    """
+    global game_state, accuracy
+    _, max_val, _, max_loc = match_image(monitor_img, img)
+    accuracy = max_val
+
+    if is_accuracy_above_threshold(accuracy, threshold):
+        click_img_on_screen(img, max_loc)
+        next_state()
+
+# Print FPS
+def print_fps():
+    """Print FPS on console
+    """
+    global fps_time
+    os.system('clear')
+    try:
+        print('FPS: %.0f' % (1 / (time() - fps_time)))
+    except:
+        None
+    fps_time = time()
+
+# Print game state
+def print_game_state():
+    """Print game state on console
+    """
+    print("Game State:", game_state.name)
+
+# Print accuracy of image
+def print_accuracy_image():
+    """Print accuracy of image
+    """
+    print("Accuracy: %.2f%%" % (accuracy*100))
+
 
 # Script Start
-fps_time = time()
 
 while True:
-    print(game_state.name)
     monitor_img = get_monitor_scr()
 
     # Verify game state
-    if game_state == GAME_STATES.GAME_NOT_STARTED:
-        min_val, max_val, min_loc, max_loc = match_image(monitor_img, auto_btn_img)
-
-        print("Accuracy: %.2f%%" % max_val)
-
-        if is_accuracy_above_threshold(max_val, AUTO_THRESHOLD):
-            click_img_on_screen(auto_btn_img, max_loc)
-            game_state = next_state()
-
+    if game_state == GAME_STATES.GAME_AUTO_OFF:
+        find_and_click_img(auto_btn_img, AUTO_THRESHOLD)
+    elif game_state == GAME_STATES.GAME_END_MESSAGE:
+        find_and_click_img(ok_btn_img, OK_THRESHOLD)
+    elif game_state == GAME_STATES.GAME_END_BONUS:
+        find_and_click_img(continue_btn_img, CONTINUE_THRESHOLD)
+    elif game_state == GAME_STATES.GAME_QUEST_CLEAR:
+        find_and_click_img(retry_btn_img, RETRY_THRESHOLD)
 
     open_image('Image to Match', monitor_img)
 
     if keyboard.is_pressed('c'):
         break
 
-    fps_time = show_fps(fps_time)
+    print_fps()
+    print_game_state()
+    print_accuracy_image()
