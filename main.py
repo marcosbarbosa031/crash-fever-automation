@@ -1,7 +1,6 @@
 import os
 import mss
 import cv2
-import keyboard
 import win32api
 import win32gui
 import win32con
