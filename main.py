@@ -17,7 +17,7 @@ bluestacks_window = None
 
 # Threshold
 AUTO_THRESHOLD = .80
-OK_THRESHOLD = .80
+OK_THRESHOLD = .75
 CONTINUE_THRESHOLD = .80
 RETRY_THRESHOLD = .80
 
@@ -205,5 +205,5 @@ while True:
 
     open_image('Image to Match', bluestacks_img)
 
-    if keyboard.is_pressed('c'):
-        break
+    # if keyboard.is_pressed('c'):
+    #     break
