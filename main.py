@@ -2,18 +2,20 @@ import os
 import mss
 import cv2
 import keyboard
-import pyautogui
+import win32api
+import win32gui
+import win32con
 import numpy as np
+from time import time
 from enum import Enum
-from time import time, sleep
 
 sct = mss.mss()
 
 # Constants
-pyautogui.PAUSE = 0
+fps_time = time()
+bluestacks_window = None
 
 # Threshold
-BLUESTACKS_THRESHOLD = .90
 AUTO_THRESHOLD = .80
 OK_THRESHOLD = .80
 CONTINUE_THRESHOLD = .80
@@ -23,36 +25,33 @@ RETRY_THRESHOLD = .80
 BOX_COLOR = (0, 255, 0)
 BOX_BORDER_WIDTH = 2
 
-# Game state
-class GAME_STATES(Enum):
-    GAME_AUTO_OFF = 1
-    GAME_END_MESSAGE = 2
-    GAME_END_BONUS = 3
-    GAME_QUEST_CLEAR = 4
-
-game_state = GAME_STATES.GAME_AUTO_OFF
-fps_time = time()
-
-# Drawing
-RECT_COLOR = (0, 255, 0)
-RECT_BORDER_WIDTH = 2
-
 # Target Images
 auto_btn_img = cv2.imread('assets/auto_btn.png')
 ok_btn_img = cv2.imread('assets/ok_btn.png')
 continue_btn_img = cv2.imread('assets/continue_btn.png')
 retry_btn_img = cv2.imread('assets/retry_btn.png')
 
+# Game state
+class GAME_STATES(Enum):
+    BOT_STARTED = None
+    CLICKED_AUTO = { 'name': 'Auto Button', 'img': auto_btn_img, 'threshold': AUTO_THRESHOLD }
+    CLICKED_OK = { 'name': 'Ok Button', 'img': ok_btn_img, 'threshold': OK_THRESHOLD }
+    CLICKED_CONTINUE = { 'name': 'Continue Button', 'img': continue_btn_img, 'threshold': CONTINUE_THRESHOLD }
+    CLICKED_RETRY = { 'name': 'Retry Button', 'img': retry_btn_img, 'threshold': RETRY_THRESHOLD }
 
-# Get monitor screen
-def get_monitor_scr():
-    """Return the screenshot of the primary monitor.
+game_state = GAME_STATES.BOT_STARTED
 
-    @returns Image with the screenshot.
-    """
-    img = np.array(sct.grab(sct.monitors[1]))
-    img = img[:,:,:3]
-    return img.copy()
+
+# Get Window by name
+def get_window(window_name):
+    global bluestacks_window
+    hWnd = win32gui.FindWindow(None, window_name)
+    bluestacks_window = win32gui.FindWindowEx(hWnd, None, None, None)
+
+# Get window dimensions
+def get_window_dimensions(window):
+    rect = win32gui.GetWindowRect(window)
+    return [rect[0], rect[1], (rect[2] - rect[0]), (rect[3] - rect[1])]
 
 # Match and image with another
 def match_image(compare_img, target_img):
@@ -95,7 +94,9 @@ def get_monitor_segment_img(dimensions):
 
     @returns The image with the portion of the screen.
     """
-    return np.array(sct.grab(dimensions))
+    img = np.array(sct.grab(dimensions))
+    img = img[:,:,:3]
+    return img.copy()
 
 # Open a windows with the image
 def open_image(title, image):
@@ -106,16 +107,6 @@ def open_image(title, image):
     """
     cv2.imshow(title, image)
     cv2.waitKey(1)
-
-# Check if the BlueStacks window is maximized
-def is_bluestacks_maximized(bluestacks_xloc):
-    """Check if the BlueStacks window is maximized.
-
-    @param bluestacks_xloc The top left position of bluestacks.
-
-    @returns True if maximized and False if not.
-    """
-    return bluestacks_xloc < 10
 
 # Draw rectangle in image
 def draw_rect(image, start_vertex, end_vertex, rect_color, rect_border_width):
@@ -129,43 +120,45 @@ def draw_rect(image, start_vertex, end_vertex, rect_color, rect_border_width):
     """
     cv2.rectangle(image, start_vertex, end_vertex, rect_color, rect_border_width)
 
-# Go to next game state
-def next_state():
-    """Update game state to next state
-    """
-    global game_state
-    next = game_state.value + 1 if game_state.value < len(GAME_STATES) else 1
-    game_state = GAME_STATES(next)
-
 # Click the image found on scree
-def click_img_on_screen(img, img_loc):
-    """Click on the image found on screen
+def click_img_on_window(img, img_loc):
+    """Click on the image found on window
 
     @param img The image to click.
     @param img_loc Tuple with image x and y location.
     """
     w, h = get_img_dimension(img)
-    draw_rect(monitor_img, img_loc, (img_loc[0] + w, img_loc[1] + h), RECT_COLOR, RECT_BORDER_WIDTH)
+    draw_rect(bluestacks_img, img_loc, (img_loc[0] + w, img_loc[1] + h), RECT_COLOR, RECT_BORDER_WIDTH)
 
-    click_x = img_loc[0] + (w/2)
-    click_y = img_loc[1] + (h/2)
+    x = img_loc[0] + (w//2)
+    y = img_loc[1] + (h//2)
 
-    pyautogui.click(click_x, click_y)
+    lParam = win32api.MAKELONG(x, y)
+    win32gui.SendMessage(bluestacks_window, win32con.WM_LBUTTONDOWN, win32con.MK_LBUTTON, lParam)
+    win32gui.SendMessage(bluestacks_window, win32con.WM_LBUTTONUP, None, lParam)
 
 # Find image on the specific game state
-def find_and_click_img(img, threshold):
+def find_and_click_img(state):
     """Find image on the specific game state.
 
-    @param img The image to click.
-    @param threshold image threshold.
+    @param state The game state with the image to find and threshold.
     """
-    global game_state, accuracy
-    _, max_val, _, max_loc = match_image(monitor_img, img)
-    accuracy = max_val
 
-    if is_accuracy_above_threshold(accuracy, threshold):
-        click_img_on_screen(img, max_loc)
-        next_state()
+    img = state.value['img']
+    threshold = state.value['threshold']
+    button_name = state.value['name']
+    _, max_val, _, max_loc = match_image(bluestacks_img, img)
+
+    print_accuracy_image(max_val, button_name)
+
+    if is_accuracy_above_threshold(max_val, threshold):
+        click_img_on_window(img, max_loc)
+        update_state(state)
+
+# Update game state
+def update_state(state):
+    global game_state
+    game_state = state
 
 # Print FPS
 def print_fps():
@@ -186,32 +179,31 @@ def print_game_state():
     print("Game State:", game_state.name)
 
 # Print accuracy of image
-def print_accuracy_image():
+def print_accuracy_image(accuracy, button_name):
     """Print accuracy of image
     """
-    print("Accuracy: %.2f%%" % (accuracy*100))
+    print("Accuracy of ", button_name, ": %.2f%%" % (accuracy*100))
 
+# Get Bluestacks windows image
+def get_bluestacks_window_img():
+    x, y, w, h = get_window_dimensions(bluestacks_window)
+    dimensions = { 'left': x, 'top': y, 'width': w, 'height': h }
+    return get_monitor_segment_img(dimensions)
 
 # Script Start
+get_window("BlueStacks")
 
 while True:
-    monitor_img = get_monitor_scr()
+    print_fps()
+    print_game_state()
 
-    # Verify game state
-    if game_state == GAME_STATES.GAME_AUTO_OFF:
-        find_and_click_img(auto_btn_img, AUTO_THRESHOLD)
-    elif game_state == GAME_STATES.GAME_END_MESSAGE:
-        find_and_click_img(ok_btn_img, OK_THRESHOLD)
-    elif game_state == GAME_STATES.GAME_END_BONUS:
-        find_and_click_img(continue_btn_img, CONTINUE_THRESHOLD)
-    elif game_state == GAME_STATES.GAME_QUEST_CLEAR:
-        find_and_click_img(retry_btn_img, RETRY_THRESHOLD)
+    bluestacks_img = get_bluestacks_window_img()
 
-    open_image('Image to Match', monitor_img)
+    for state in GAME_STATES:
+        if state.value is not None:
+            find_and_click_img(state)
+
+    open_image('Image to Match', bluestacks_img)
 
     if keyboard.is_pressed('c'):
         break
-
-    print_fps()
-    print_game_state()
-    print_accuracy_image()
