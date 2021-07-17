@@ -128,7 +128,7 @@ def click_img_on_window(img, img_loc):
     @param img_loc Tuple with image x and y location.
     """
     w, h = get_img_dimension(img)
-    draw_rect(bluestacks_img, img_loc, (img_loc[0] + w, img_loc[1] + h), RECT_COLOR, RECT_BORDER_WIDTH)
+    draw_rect(bluestacks_img, img_loc, (img_loc[0] + w, img_loc[1] + h), BOX_COLOR, BOX_BORDER_WIDTH)
 
     x = img_loc[0] + (w//2)
     y = img_loc[1] + (h//2)
@@ -182,7 +182,7 @@ def print_game_state():
 def print_accuracy_image(accuracy, button_name):
     """Print accuracy of image
     """
-    print("Accuracy of ", button_name, ": %.2f%%" % (accuracy*100))
+    print("Accuracy of", button_name, ": %.2f%%" % (accuracy*100))
 
 # Get Bluestacks windows image
 def get_bluestacks_window_img():
