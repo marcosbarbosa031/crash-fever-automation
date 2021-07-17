@@ -20,6 +20,8 @@ AUTO_THRESHOLD = .80
 OK_THRESHOLD = .75
 CONTINUE_THRESHOLD = .80
 RETRY_THRESHOLD = .80
+SKIP_THRESHOLD = .80
+UPDATE_LIST_THRESHOLD = .99
 
 # Box Drawing
 BOX_COLOR = (0, 255, 0)
@@ -30,6 +32,8 @@ auto_btn_img = cv2.imread('assets/auto_btn.png')
 ok_btn_img = cv2.imread('assets/ok_btn.png')
 continue_btn_img = cv2.imread('assets/continue_btn.png')
 retry_btn_img = cv2.imread('assets/retry_btn.png')
+skip_btn_img = cv2.imread('assets/skip_btn.png')
+update_list_btn_img = cv2.imread('assets/update_list_btn.png')
 
 # Game state
 class GAME_STATES(Enum):
@@ -38,6 +42,8 @@ class GAME_STATES(Enum):
     CLICKED_OK = { 'name': 'Ok Button', 'img': ok_btn_img, 'threshold': OK_THRESHOLD }
     CLICKED_CONTINUE = { 'name': 'Continue Button', 'img': continue_btn_img, 'threshold': CONTINUE_THRESHOLD }
     CLICKED_RETRY = { 'name': 'Retry Button', 'img': retry_btn_img, 'threshold': RETRY_THRESHOLD }
+    # CLICKED_SKIP = { 'name': 'Skip Button', 'img': skip_btn_img, 'threshold': SKIP_THRESHOLD }
+    # CLICKED_UPDATE_LIST = { 'name': 'Update List Button', 'img': update_list_btn_img, 'threshold': UPDATE_LIST_THRESHOLD }
 
 game_state = GAME_STATES.BOT_STARTED
 
@@ -154,6 +160,7 @@ def find_and_click_img(state):
     if is_accuracy_above_threshold(max_val, threshold):
         click_img_on_window(img, max_loc)
         update_state(state)
+        open_image('Crash Fever', bluestacks_img)
 
 # Update game state
 def update_state(state):
@@ -203,7 +210,7 @@ while True:
         if state.value is not None:
             find_and_click_img(state)
 
-    open_image('Image to Match', bluestacks_img)
+    # open_image('Crash Fever', bluestacks_img)
 
     # if keyboard.is_pressed('c'):
     #     break
