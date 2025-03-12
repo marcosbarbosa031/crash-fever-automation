@@ -225,5 +225,5 @@ while True:
 
     # open_image('Crash Fever', emulator_img)
 
-    if keyboard.is_pressed('c'):
-        break
+    # if keyboard.is_pressed('c'):
+    #     break
