@@ -1,4 +1,4 @@
-# crash-feever-ai
+# crash-fever-ai
 
 A simple automation script with Open CV, for the game Crash Fever. It automates the proccess of repeating some quests (ideal for farming).
 
