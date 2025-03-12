@@ -1,10 +1,13 @@
 import os
+import platform
+import keyboard
 import mss
 import cv2
 import win32api
 import win32gui
 import win32con
 import numpy as np
+import argparse
 from time import time
 from enum import Enum
 
@@ -12,7 +15,7 @@ sct = mss.mss()
 
 # Constants
 fps_time = time()
-bluestacks_window = None
+emulator_window = None
 
 # Threshold
 AUTO_THRESHOLD = .80
@@ -27,12 +30,12 @@ BOX_COLOR = (0, 255, 0)
 BOX_BORDER_WIDTH = 2
 
 # Target Images
-auto_btn_img = cv2.imread('assets/auto_btn.png')
+auto_btn_img = cv2.imread('assets/auto_btn_jpn.png')
 ok_btn_img = cv2.imread('assets/ok_btn.png')
-continue_btn_img = cv2.imread('assets/continue_btn.png')
-retry_btn_img = cv2.imread('assets/retry_btn.png')
-skip_btn_img = cv2.imread('assets/skip_btn.png')
-update_list_btn_img = cv2.imread('assets/update_list_btn.png')
+continue_btn_img = cv2.imread('assets/continue_btn_jpn.png')
+retry_btn_img = cv2.imread('assets/retry_btn_jpn.png')
+# skip_btn_img = cv2.imread('assets/skip_btn.png')
+# update_list_btn_img = cv2.imread('assets/update_list_btn.png')
 
 # Game state
 class GAME_STATES(Enum):
@@ -49,9 +52,9 @@ game_state = GAME_STATES.BOT_STARTED
 
 # Get Window by name
 def get_window(window_name):
-    global bluestacks_window
+    global emulator_window
     hWnd = win32gui.FindWindow(None, window_name)
-    bluestacks_window = win32gui.FindWindowEx(hWnd, None, None, None)
+    emulator_window = win32gui.FindWindowEx(hWnd, None, None, None)
 
 # Get window dimensions
 def get_window_dimensions(window):
@@ -133,14 +136,14 @@ def click_img_on_window(img, img_loc):
     @param img_loc Tuple with image x and y location.
     """
     w, h = get_img_dimension(img)
-    draw_rect(bluestacks_img, img_loc, (img_loc[0] + w, img_loc[1] + h), BOX_COLOR, BOX_BORDER_WIDTH)
+    draw_rect(emulator_img, img_loc, (img_loc[0] + w, img_loc[1] + h), BOX_COLOR, BOX_BORDER_WIDTH)
 
     x = img_loc[0] + (w//2)
     y = img_loc[1] + (h//2)
 
     lParam = win32api.MAKELONG(x, y)
-    win32gui.SendMessage(bluestacks_window, win32con.WM_LBUTTONDOWN, win32con.MK_LBUTTON, lParam)
-    win32gui.SendMessage(bluestacks_window, win32con.WM_LBUTTONUP, None, lParam)
+    win32gui.SendMessage(emulator_window, win32con.WM_LBUTTONDOWN, win32con.MK_LBUTTON, lParam)
+    win32gui.SendMessage(emulator_window, win32con.WM_LBUTTONUP, None, lParam)
 
 # Find image on the specific game state
 def find_and_click_img(state):
@@ -152,14 +155,14 @@ def find_and_click_img(state):
     img = state.value['img']
     threshold = state.value['threshold']
     button_name = state.value['name']
-    _, max_val, _, max_loc = match_image(bluestacks_img, img)
+    _, max_val, _, max_loc = match_image(emulator_img, img)
 
     print_accuracy_image(max_val, button_name)
 
     if is_accuracy_above_threshold(max_val, threshold):
         click_img_on_window(img, max_loc)
         update_state(state)
-        open_image('Crash Fever', bluestacks_img)
+        # open_image('Crash Fever', emulator_img)
 
 # Update game state
 def update_state(state):
@@ -170,11 +173,13 @@ def update_state(state):
 def print_fps():
     """Print FPS on console
     """
-    global fps_time
-    os.system('clear')
+    # Clear screen based on OS
+    clear_command = 'cls' if platform.system() == 'Windows' else 'clear'
+    os.system(clear_command)
     try:
         print('FPS: %.0f' % (1 / (time() - fps_time)))
     except:
+        None
         None
     fps_time = time()
 
@@ -190,26 +195,35 @@ def print_accuracy_image(accuracy, button_name):
     """
     print("Accuracy of", button_name, ": %.2f%%" % (accuracy*100))
 
-# Get Bluestacks windows image
-def get_bluestacks_window_img():
-    x, y, w, h = get_window_dimensions(bluestacks_window)
+# Get emulator windows image
+def get_emulator_window_img():
+    x, y, w, h = get_window_dimensions(emulator_window)
     dimensions = { 'left': x, 'top': y, 'width': w, 'height': h }
     return get_monitor_segment_img(dimensions)
 
+# Parse command line arguments
+def parse_args():
+    parser = argparse.ArgumentParser(description='Bot for automating game actions')
+    parser.add_argument('--app_name', type=str, default='BlueStacks',
+                        help='Name of the application window to control (default: BlueStacks)')
+    return parser.parse_args()
+
 # Script Start
-get_window("BlueStacks")
+if __name__ == "__main__":
+    args = parse_args()
+    get_window(args.app_name)
 
 while True:
     print_fps()
     print_game_state()
 
-    bluestacks_img = get_bluestacks_window_img()
+    emulator_img = get_emulator_window_img()
 
     for state in GAME_STATES:
         if state.value is not None:
             find_and_click_img(state)
 
-    # open_image('Crash Fever', bluestacks_img)
+    # open_image('Crash Fever', emulator_img)
 
-    # if keyboard.is_pressed('c'):
-    #     break
+    if keyboard.is_pressed('c'):
+        break

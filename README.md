@@ -1,6 +1,6 @@
 # crash-feever-ai
 
-Crash Feever Automation with Open CV on BlueStacks Android emulator
+A simple automation script with Open CV, for the game Crash Fever. It automates the proccess of repeating some quests (ideal for farming).
 
 # Installing requirements
 
@@ -12,10 +12,10 @@ pip install -r requirements.txt
 
 # Runing Script
 
-Open the game on Bluestacks emulator (Te scripts runs better if the emualtor is fullscreen ecause of the proporsion of the ui Elements).
+Open the game on any emulator (The scripts runs better if the emulator is in fullscreen because of UI elements proportions).
 
 Run the code:
 
 ```
-python main.py
+python main.py --app_name="Emulator Window Name"
 ```
