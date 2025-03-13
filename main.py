@@ -34,7 +34,7 @@ auto_btn_img = cv2.imread('assets/auto_btn_jpn.png')
 ok_btn_img = cv2.imread('assets/ok_btn.png')
 continue_btn_img = cv2.imread('assets/continue_btn_jpn.png')
 retry_btn_img = cv2.imread('assets/retry_btn_jpn.png')
-# skip_btn_img = cv2.imread('assets/skip_btn.png')
+skip_btn_img = cv2.imread('assets/skip_btn_jpn.png')
 # update_list_btn_img = cv2.imread('assets/update_list_btn.png')
 
 # Game state
@@ -44,7 +44,7 @@ class GAME_STATES(Enum):
     CLICKED_OK = { 'name': 'Ok Button', 'img': ok_btn_img, 'threshold': OK_THRESHOLD }
     CLICKED_CONTINUE = { 'name': 'Continue Button', 'img': continue_btn_img, 'threshold': CONTINUE_THRESHOLD }
     CLICKED_RETRY = { 'name': 'Retry Button', 'img': retry_btn_img, 'threshold': RETRY_THRESHOLD }
-    # CLICKED_SKIP = { 'name': 'Skip Button', 'img': skip_btn_img, 'threshold': SKIP_THRESHOLD }
+    CLICKED_SKIP = { 'name': 'Skip Button', 'img': skip_btn_img, 'threshold': SKIP_THRESHOLD }
     # CLICKED_UPDATE_LIST = { 'name': 'Update List Button', 'img': update_list_btn_img, 'threshold': UPDATE_LIST_THRESHOLD }
 
 game_state = GAME_STATES.BOT_STARTED
