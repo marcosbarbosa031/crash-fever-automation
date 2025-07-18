@@ -43,7 +43,7 @@ skip_turn_img = cv2.imread('assets/skip_turn.png')
 class GAME_STATES(Enum):
     BOT_STARTED = None
     CLICKED_AUTO = { 'name': 'Auto Button', 'img': auto_btn_img, 'threshold': AUTO_THRESHOLD }
-    CLICKED_SKIP_TURN = { 'name': 'Skip Turn Button', 'img': skip_turn_img, 'threshold': SKIP_TURN_THRESHOLD }
+    # CLICKED_SKIP_TURN = { 'name': 'Skip Turn Button', 'img': skip_turn_img, 'threshold': SKIP_TURN_THRESHOLD }
     CLICKED_OK = { 'name': 'Ok Button', 'img': ok_btn_img, 'threshold': OK_THRESHOLD }
     CLICKED_CONTINUE = { 'name': 'Continue Button', 'img': continue_btn_img, 'threshold': CONTINUE_THRESHOLD }
     CLICKED_RETRY = { 'name': 'Retry Button', 'img': retry_btn_img, 'threshold': RETRY_THRESHOLD }
